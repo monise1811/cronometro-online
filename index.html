@@ -10,7 +10,7 @@
       text-align: center;
       padding-top: 50px;
       background-color: #f0f0f0;
-      overflow: hidden; /* Impede o scroll */
+      overflow: hidden;
     }
     #timer {
       font-size: 80px;
@@ -42,12 +42,13 @@
   <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <script>
-    let totalSeconds = 25 * 60;
     const timerEl = document.getElementById("timer");
     const alertBox = document.getElementById("alertBox");
     const beep = document.getElementById("beep");
     const startBtn = document.getElementById("startBtn");
+
     let countdown;
+    let totalSeconds = 25 * 60;
 
     function updateTimer() {
       const minutes = Math.floor(totalSeconds / 60);
@@ -63,7 +64,7 @@
       }, 5000);
     }
 
-    startBtn.addEventListener("click", () => {
+    function iniciarContagem(autoStart = false) {
       startBtn.style.display = "none";
       timerEl.style.display = "block";
       updateTimer();
@@ -71,6 +72,7 @@
       countdown = setInterval(() => {
         if (totalSeconds === 0) {
           clearInterval(countdown);
+          localStorage.removeItem("cronometroData");
           timerEl.textContent = "00:00";
           showAlert("⏰ Tempo esgotado!");
           return;
@@ -89,8 +91,39 @@
 
         totalSeconds--;
         updateTimer();
+
+        // Salvar o tempo restante e data
+        localStorage.setItem("cronometroData", JSON.stringify({
+          remaining: totalSeconds,
+          timestamp: Date.now(),
+          date: new Date().toISOString().split('T')[0]
+        }));
       }, 1000);
+    }
+
+    startBtn.addEventListener("click", () => {
+      iniciarContagem();
     });
+
+    // Verificar se deve retomar
+    const saved = localStorage.getItem("cronometroData");
+    if (saved) {
+      const data = JSON.parse(saved);
+      const today = new Date().toISOString().split('T')[0];
+
+      if (data.date === today) {
+        const elapsed = Math.floor((Date.now() - data.timestamp) / 1000);
+        totalSeconds = Math.max(data.remaining - elapsed, 0);
+        if (totalSeconds > 0) {
+          iniciarContagem(true);
+        } else {
+          localStorage.removeItem("cronometroData");
+        }
+      } else {
+        // Apagar se for de outro dia
+        localStorage.removeItem("cronometroData");
+      }
+    }
   </script>
 </body>
 </html>
