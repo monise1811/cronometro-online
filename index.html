@@ -3,7 +3,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Cronômetro de 25 Min</title>
+  <title>Cronômetro de 25 Minutos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -47,13 +47,17 @@
     const beep = document.getElementById("beep");
     const startBtn = document.getElementById("startBtn");
 
-    let countdown;
-    let totalSeconds = 25 * 60;
+    let duration = 25 * 60 * 1000;
+    let endTime = null;
+    let interval = null;
+    let alert15 = false;
+    let alert5 = false;
 
-    function updateTimer() {
+    function formatTime(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
       const minutes = Math.floor(totalSeconds / 60);
       const seconds = totalSeconds % 60;
-      timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
     function showAlert(msg) {
@@ -64,64 +68,57 @@
       }, 5000);
     }
 
-    function iniciarContagem(autoStart = false) {
+    function startCountdown() {
+      endTime = Date.now() + duration;
       startBtn.style.display = "none";
       timerEl.style.display = "block";
-      updateTimer();
+      alert15 = false;
+      alert5 = false;
+      localStorage.setItem("cronometroStart", JSON.stringify({
+        endTime,
+        date: new Date().toISOString().split('T')[0]
+      }));
 
-      countdown = setInterval(() => {
-        if (totalSeconds === 0) {
-          clearInterval(countdown);
-          localStorage.removeItem("cronometroData");
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = endTime - now;
+
+        timerEl.textContent = formatTime(remaining);
+
+        if (!alert15 && remaining <= 15 * 60 * 1000) {
+          showAlert("🚨 Passaram-se 10 minutos!");
+          alert15 = true;
+        }
+
+        if (!alert5 && remaining <= 5 * 60 * 1000) {
+          showAlert("🚨 Passaram-se 20 minutos!");
+          alert5 = true;
+        }
+
+        if (remaining <= 0) {
+          clearInterval(interval);
           timerEl.textContent = "00:00";
           showAlert("⏰ Tempo esgotado!");
-          return;
+          localStorage.removeItem("cronometroStart");
         }
 
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-
-        if (minutes === 15 && seconds === 0) {
-          showAlert("🚨 Passaram-se 10 minutos!");
-        }
-
-        if (minutes === 5 && seconds === 0) {
-          showAlert("🚨 Passaram-se 20 minutos!");
-        }
-
-        totalSeconds--;
-        updateTimer();
-
-        // Salvar o tempo restante e data
-        localStorage.setItem("cronometroData", JSON.stringify({
-          remaining: totalSeconds,
-          timestamp: Date.now(),
-          date: new Date().toISOString().split('T')[0]
-        }));
-      }, 1000);
+      }, 500);
     }
 
     startBtn.addEventListener("click", () => {
-      iniciarContagem();
+      startCountdown();
     });
 
-    // Verificar se deve retomar
-    const saved = localStorage.getItem("cronometroData");
+    // Retomar se necessário
+    const saved = localStorage.getItem("cronometroStart");
     if (saved) {
       const data = JSON.parse(saved);
       const today = new Date().toISOString().split('T')[0];
-
-      if (data.date === today) {
-        const elapsed = Math.floor((Date.now() - data.timestamp) / 1000);
-        totalSeconds = Math.max(data.remaining - elapsed, 0);
-        if (totalSeconds > 0) {
-          iniciarContagem(true);
-        } else {
-          localStorage.removeItem("cronometroData");
-        }
+      if (data.date === today && data.endTime > Date.now()) {
+        endTime = data.endTime;
+        startCountdown();
       } else {
-        // Apagar se for de outro dia
-        localStorage.removeItem("cronometroData");
+        localStorage.removeItem("cronometroStart");
       }
     }
   </script>
