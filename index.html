@@ -41,7 +41,7 @@
   <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <script>
-    let totalSeconds = 25 * 60; // 25 minutos
+    let totalSeconds = 25 * 60;
     const timerEl = document.getElementById("timer");
     const alertBox = document.getElementById("alertBox");
     const beep = document.getElementById("beep");
@@ -65,19 +65,25 @@
     startBtn.addEventListener("click", () => {
       startBtn.style.display = "none";
       timerEl.style.display = "block";
-      updateTimer(); // mostrar 25:00 inicialmente
+      updateTimer();
 
       countdown = setInterval(() => {
         if (totalSeconds === 0) {
           clearInterval(countdown);
           timerEl.textContent = "00:00";
-          showAlert("Tempo esgotado!");
+          showAlert("⏰ Tempo esgotado!");
           return;
         }
 
-        if (totalSeconds % (10 * 60) === 0 && totalSeconds !== 25 * 60) {
-          const elapsedMin = 25 - totalSeconds / 60;
-          showAlert(`🚨 Passaram-se ${elapsedMin} minutos!`);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        if (minutes === 15 && seconds === 0) {
+          showAlert("🚨 Passaram-se 10 minutos!");
+        }
+
+        if (minutes === 5 && seconds === 0) {
+          showAlert("🚨 Passaram-se 20 minutos!");
         }
 
         totalSeconds--;
