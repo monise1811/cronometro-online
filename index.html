@@ -1,126 +1,100 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Cronômetro de 25 Minutos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cronômetro - 25 minutos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
       text-align: center;
       padding-top: 50px;
-      background-color: #f0f0f0;
+      margin: 0;
       overflow: hidden;
     }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 40px;
+    }
+
     #timer {
-      font-size: 80px;
-      color: #333;
-      margin-top: 20px;
+      font-size: 4em;
+      margin: 20px 0;
     }
-    .alert {
-      color: red;
-      font-size: 24px;
-      margin-top: 20px;
-    }
-    #startBtn {
-      font-size: 24px;
+
+    button {
+      font-size: 1.2em;
       padding: 10px 20px;
-      background-color: #28a745;
-      color: white;
       border: none;
-      border-radius: 8px;
+      background-color: #00c853;
+      color: white;
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-  <h1>Cronômetro de Contagem Regressiva</h1>
-  <button id="startBtn">Iniciar Cronômetro</button>
-  <div id="timer" style="display:none;">25:00</div>
-  <div class="alert" id="alertBox"></div>
+  <h1>Cronômetro - 25 minutos</h1>
+  <div id="timer">25:00</div>
+  <button id="startBtn">Iniciar</button>
 
-  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+  <audio id="alarm" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+  <audio id="background" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_93c3eb23d3.mp3?filename=ambience-forest-chill-ambient-111397.mp3" preload="auto" loop></audio>
 
   <script>
-    const timerEl = document.getElementById("timer");
-    const alertBox = document.getElementById("alertBox");
-    const beep = document.getElementById("beep");
-    const startBtn = document.getElementById("startBtn");
+    let totalSeconds = 25 * 60;
+    let interval;
+    let started = false;
+    let startBtn = document.getElementById('startBtn');
+    let timerDisplay = document.getElementById('timer');
+    let alarmSound = document.getElementById('alarm');
+    let backgroundSound = document.getElementById('background');
 
-    let duration = 25 * 60 * 1000;
-    let endTime = null;
-    let interval = null;
-    let alert15 = false;
-    let alert5 = false;
-
-    function formatTime(ms) {
-      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    function updateDisplay() {
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      timerDisplay.textContent = `${minutes}:${seconds}`;
     }
 
-    function showAlert(msg) {
-      alertBox.textContent = msg;
-      beep.play();
-      setTimeout(() => {
-        alertBox.textContent = "";
-      }, 5000);
+    function playAlarm() {
+      alarmSound.currentTime = 0;
+      alarmSound.play();
     }
 
-    function startCountdown() {
-      endTime = Date.now() + duration;
-      startBtn.style.display = "none";
-      timerEl.style.display = "block";
-      alert15 = false;
-      alert5 = false;
-      localStorage.setItem("cronometroStart", JSON.stringify({
-        endTime,
-        date: new Date().toISOString().split('T')[0]
-      }));
+    function startTimer() {
+      if (started) return;
+      started = true;
+      startBtn.disabled = true;
+      backgroundSound.volume = 0.08;
+      backgroundSound.play();
 
       interval = setInterval(() => {
-        const now = Date.now();
-        const remaining = endTime - now;
+        totalSeconds--;
+        updateDisplay();
 
-        timerEl.textContent = formatTime(remaining);
-
-        if (!alert15 && remaining <= 15 * 60 * 1000) {
-          showAlert("🚨 Passaram-se 10 minutos!");
-          alert15 = true;
+        if (totalSeconds === 15 * 60 || totalSeconds === 5 * 60 || totalSeconds === 0) {
+          playAlarm();
         }
 
-        if (!alert5 && remaining <= 5 * 60 * 1000) {
-          showAlert("🚨 Passaram-se 20 minutos!");
-          alert5 = true;
-        }
-
-        if (remaining <= 0) {
+        if (totalSeconds <= 0) {
           clearInterval(interval);
-          timerEl.textContent = "00:00";
-          showAlert("⏰ Tempo esgotado!");
-          localStorage.removeItem("cronometroStart");
+          backgroundSound.pause();
+          backgroundSound.currentTime = 0;
+          startBtn.disabled = false; // libera botão novamente
         }
-
-      }, 500);
+      }, 1000);
     }
 
-    startBtn.addEventListener("click", () => {
-      startCountdown();
-    });
-
-    // Retomar se necessário
-    const saved = localStorage.getItem("cronometroStart");
-    if (saved) {
-      const data = JSON.parse(saved);
-      const today = new Date().toISOString().split('T')[0];
-      if (data.date === today && data.endTime > Date.now()) {
-        endTime = data.endTime;
-        startCountdown();
-      } else {
-        localStorage.removeItem("cronometroStart");
-      }
-    }
+    startBtn.addEventListener('click', startTimer);
+    updateDisplay();
   </script>
 </body>
 </html>
