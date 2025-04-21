@@ -1,40 +1,39 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cronômetro - 25 minutos</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
       background-color: #000;
       color: #fff;
+      font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 100px;
+      user-select: none;
+      overflow: hidden;
     }
-
     h1 {
-      font-size: 3em;
-      margin-bottom: 20px;
+      margin-top: 40px;
+      font-size: 2em;
     }
-
     #timer {
-      font-size: 5em;
-      margin-bottom: 30px;
+      font-size: 8em;
+      margin: 40px 0;
     }
-
     button {
-      padding: 15px 30px;
       font-size: 1.5em;
-      background-color: #1abc9c;
+      padding: 10px 30px;
       border: none;
       border-radius: 8px;
+      background-color: #00bcd4;
       color: white;
       cursor: pointer;
     }
-
     button:disabled {
-      background-color: #555;
+      background-color: #888;
       cursor: not-allowed;
     }
   </style>
@@ -42,21 +41,17 @@
 <body>
   <h1>Cronômetro - 25 minutos</h1>
   <div id="timer">25:00</div>
-  <button id="startButton">Iniciar</button>
+  <button id="start">Iniciar</button>
 
-  <audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
-  <audio id="background-audio" loop>
-    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_c7c40dc388.mp3" type="audio/mp3">
-  </audio>
+  <audio id="alarm" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
 
   <script>
-    const timerDisplay = document.getElementById("timer");
-    const startButton = document.getElementById("startButton");
-    const alertSound = document.getElementById("alert-sound");
-    const backgroundAudio = document.getElementById("background-audio");
+    const timerDisplay = document.getElementById('timer');
+    const startButton = document.getElementById('start');
+    const alarm = document.getElementById('alarm');
 
-    let duration = 25 * 60; // 25 minutos
-    let timer;
+    let countdown;
+    let duration = 25 * 60;
     let remainingTime = duration;
 
     function updateDisplay(seconds) {
@@ -65,44 +60,37 @@
       timerDisplay.textContent = `${min}:${sec}`;
     }
 
-    function playAlert() {
-      alertSound.currentTime = 0;
-      alertSound.play();
+    function playAlarm() {
+      alarm.currentTime = 0;
+      alarm.play().catch(e => console.log("Erro ao tocar som:", e));
     }
 
-    function startCountdown() {
+    function startTimer() {
       updateDisplay(remainingTime);
-
-      // Toca som ambiente (truque pra ativar no celular)
-      backgroundAudio.volume = 0.05;
-      backgroundAudio.play().then(() => {
-        // Reinicia rapidamente pra forçar o contexto de áudio
-        backgroundAudio.pause();
-        backgroundAudio.currentTime = 0.01;
-        backgroundAudio.play();
-      });
-
-      startButton.disabled = true;
-
-      timer = setInterval(() => {
+      countdown = setInterval(() => {
         remainingTime--;
         updateDisplay(remainingTime);
 
-        if (remainingTime === 900 || remainingTime === 300 || remainingTime === 0) {
-          playAlert();
+        if (remainingTime === 15 * 60 || remainingTime === 5 * 60 || remainingTime === 0) {
+          playAlarm();
         }
 
         if (remainingTime <= 0) {
-          clearInterval(timer);
+          clearInterval(countdown);
           startButton.disabled = false;
         }
       }, 1000);
     }
 
-    startButton.addEventListener("click", () => {
-      remainingTime = duration;
-      startCountdown();
+    startButton.addEventListener('click', () => {
+      alarm.play(); // toca uma vez no clique pra garantir permissão de áudio
+      alarm.pause();
+      alarm.currentTime = 0;
+      startButton.disabled = true;
+      startTimer();
     });
+
+    updateDisplay(duration);
   </script>
 </body>
 </html>
