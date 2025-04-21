@@ -7,31 +7,29 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #111;
+      background-color: #000;
       color: #fff;
       text-align: center;
-      padding-top: 50px;
-      margin: 0;
-      overflow: hidden;
+      padding-top: 100px;
     }
 
     h1 {
-      font-size: 2.5em;
-      margin-bottom: 40px;
+      font-size: 3em;
+      margin-bottom: 20px;
     }
 
     #timer {
-      font-size: 4em;
-      margin: 20px 0;
+      font-size: 5em;
+      margin-bottom: 30px;
     }
 
     button {
-      font-size: 1.2em;
-      padding: 10px 20px;
+      padding: 15px 30px;
+      font-size: 1.5em;
+      background-color: #1abc9c;
       border: none;
-      background-color: #00c853;
+      border-radius: 8px;
       color: white;
-      border-radius: 10px;
       cursor: pointer;
     }
 
@@ -44,57 +42,67 @@
 <body>
   <h1>Cronômetro - 25 minutos</h1>
   <div id="timer">25:00</div>
-  <button id="startBtn">Iniciar</button>
+  <button id="startButton">Iniciar</button>
 
-  <audio id="alarm" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
-  <audio id="background" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_93c3eb23d3.mp3?filename=ambience-forest-chill-ambient-111397.mp3" preload="auto" loop></audio>
+  <audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+  <audio id="background-audio" loop>
+    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_c7c40dc388.mp3" type="audio/mp3">
+  </audio>
 
   <script>
-    let totalSeconds = 25 * 60;
-    let interval;
-    let started = false;
-    let startBtn = document.getElementById('startBtn');
-    let timerDisplay = document.getElementById('timer');
-    let alarmSound = document.getElementById('alarm');
-    let backgroundSound = document.getElementById('background');
+    const timerDisplay = document.getElementById("timer");
+    const startButton = document.getElementById("startButton");
+    const alertSound = document.getElementById("alert-sound");
+    const backgroundAudio = document.getElementById("background-audio");
 
-    function updateDisplay() {
-      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-      const seconds = String(totalSeconds % 60).padStart(2, '0');
-      timerDisplay.textContent = `${minutes}:${seconds}`;
+    let duration = 25 * 60; // 25 minutos
+    let timer;
+    let remainingTime = duration;
+
+    function updateDisplay(seconds) {
+      const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const sec = String(seconds % 60).padStart(2, '0');
+      timerDisplay.textContent = `${min}:${sec}`;
     }
 
-    function playAlarm() {
-      alarmSound.currentTime = 0;
-      alarmSound.play();
+    function playAlert() {
+      alertSound.currentTime = 0;
+      alertSound.play();
     }
 
-    function startTimer() {
-      if (started) return;
-      started = true;
-      startBtn.disabled = true;
-      backgroundSound.volume = 0.08;
-      backgroundSound.play();
+    function startCountdown() {
+      updateDisplay(remainingTime);
 
-      interval = setInterval(() => {
-        totalSeconds--;
-        updateDisplay();
+      // Toca som ambiente (truque pra ativar no celular)
+      backgroundAudio.volume = 0.05;
+      backgroundAudio.play().then(() => {
+        // Reinicia rapidamente pra forçar o contexto de áudio
+        backgroundAudio.pause();
+        backgroundAudio.currentTime = 0.01;
+        backgroundAudio.play();
+      });
 
-        if (totalSeconds === 15 * 60 || totalSeconds === 5 * 60 || totalSeconds === 0) {
-          playAlarm();
+      startButton.disabled = true;
+
+      timer = setInterval(() => {
+        remainingTime--;
+        updateDisplay(remainingTime);
+
+        if (remainingTime === 900 || remainingTime === 300 || remainingTime === 0) {
+          playAlert();
         }
 
-        if (totalSeconds <= 0) {
-          clearInterval(interval);
-          backgroundSound.pause();
-          backgroundSound.currentTime = 0;
-          startBtn.disabled = false; // libera botão novamente
+        if (remainingTime <= 0) {
+          clearInterval(timer);
+          startButton.disabled = false;
         }
       }, 1000);
     }
 
-    startBtn.addEventListener('click', startTimer);
-    updateDisplay();
+    startButton.addEventListener("click", () => {
+      remainingTime = duration;
+      startCountdown();
+    });
   </script>
 </body>
 </html>
